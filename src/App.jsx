@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Header from './components/Header';
 import LiveSimulationControls from './components/LiveSimulationControls';
+import WeatherForecastWidget from './components/WeatherForecastWidget';
 import CommandMap from './components/CommandMap';
 import EmergencyResponse from './components/EmergencyResponse';
 import DomainCostSheet from './components/DomainCostSheet';
@@ -138,6 +139,12 @@ export default function App() {
         {activeTab === 'command' && (
           <div className="space-y-6">
             
+            {/* Live Real-Time Weather Telemetry & 7-Day Forecast */}
+            <WeatherForecastWidget
+              sliders={sliders}
+              setSliders={setSliders}
+            />
+
             {/* Top KPI Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               
