@@ -88,7 +88,7 @@ export const WARDS_DATA = [
     lng: 80.2212,
     baseHazard: 85,
     population: 68000,
-    elevation: 2.1, // meters above sea level
+    elevation: 2.1,
     criticalFacilities: 3,
     status: 'Vulnerable low-lying marsh basin'
   },
@@ -178,6 +178,114 @@ export const WARDS_DATA = [
   }
 ];
 
+// Chennai Major Streets & Arterial Roads with Geometries
+export const CHENNAI_STREETS = [
+  {
+    id: 'ST-01',
+    name: 'EVR Periyar Salai (Poonamallee High Road)',
+    type: 'Primary Hospital Corridor',
+    elevation: 2.8,
+    baseHazard: 80,
+    coordinates: [
+      [13.0825, 80.2760],
+      [13.0810, 80.2600],
+      [13.0780, 80.2450],
+      [13.0760, 80.2300],
+      [13.0730, 80.2100]
+    ]
+  },
+  {
+    id: 'ST-02',
+    name: 'Anna Salai (Mount Road)',
+    type: 'Major North-South Arterial',
+    elevation: 6.5,
+    baseHazard: 55,
+    coordinates: [
+      [13.0880, 80.2780],
+      [13.0650, 80.2600],
+      [13.0450, 80.2450],
+      [13.0250, 80.2250],
+      [13.0100, 80.2150]
+    ]
+  },
+  {
+    id: 'ST-03',
+    name: 'Usman Road & T. Nagar Commercial Corridor',
+    type: 'High Density Commercial Street',
+    elevation: 5.2,
+    baseHazard: 72,
+    coordinates: [
+      [13.0480, 80.2340],
+      [13.0418, 80.2341],
+      [13.0330, 80.2320],
+      [13.0250, 80.2300]
+    ]
+  },
+  {
+    id: 'ST-04',
+    name: 'Velachery Main Road & Marsh Bypass Street',
+    type: 'Wetland Catchment Arterial',
+    elevation: 1.9,
+    baseHazard: 92,
+    coordinates: [
+      [12.9900, 80.2250],
+      [12.9774, 80.2212],
+      [12.9650, 80.2180],
+      [12.9550, 80.2100]
+    ]
+  },
+  {
+    id: 'ST-05',
+    name: '100 Feet Inner Ring Road (Koyambedu to Vadapalani)',
+    type: 'Heavy Logistics Transport Arterial',
+    elevation: 4.8,
+    baseHazard: 68,
+    coordinates: [
+      [13.0750, 80.2000],
+      [13.0600, 80.2100],
+      [13.0500, 80.2120],
+      [13.0300, 80.2130]
+    ]
+  },
+  {
+    id: 'ST-06',
+    name: 'Adyar River Bank Road',
+    type: 'Floodplain Riverbank Street',
+    elevation: 2.2,
+    baseHazard: 88,
+    coordinates: [
+      [13.0250, 80.2400],
+      [13.0150, 80.2300],
+      [13.0080, 80.2450],
+      [13.0050, 80.2550]
+    ]
+  },
+  {
+    id: 'ST-07',
+    name: 'Otteri Nullah Parallel Street (Vyasarpadi)',
+    type: 'Low-Elevation North Street',
+    elevation: 1.5,
+    baseHazard: 86,
+    coordinates: [
+      [13.1150, 80.2500],
+      [13.1091, 80.2611],
+      [13.1020, 80.2700]
+    ]
+  },
+  {
+    id: 'ST-08',
+    name: 'Old Mahabalipuram Road (OMR IT Corridor)',
+    type: 'Coastal IT Sector Expressway',
+    elevation: 4.1,
+    baseHazard: 62,
+    coordinates: [
+      [12.9850, 80.2450],
+      [12.9600, 80.2460],
+      [12.9350, 80.2470]
+    ]
+  }
+];
+
 export const CRITICAL_FACILITIES = [
   {
     id: 'HOSP-01',
@@ -185,7 +293,7 @@ export const CRITICAL_FACILITIES = [
     type: 'Super-Specialty Public Hospital',
     lat: 13.0815,
     lng: 80.2777,
-    capacity: 2800, // beds
+    capacity: 2800,
     icuBeds: 350,
     backupGenerators: '3 Units (1200 kVA)',
     corridorName: 'EVR Periyar Salai Corridor',
@@ -379,7 +487,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-1',
     name: 'Drainage & Flood Control',
     icon: 'Droplets',
-    allocatedCr: 30.00, // ₹30 Crore baseline
+    allocatedCr: 30.00,
     description: 'Channel widening, stormwater drain upgrades, high-capacity pumping stations, silt clearing.',
     color: 'emerald',
     items: [
@@ -393,7 +501,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-2',
     name: 'Power & Utilities Infrastructure',
     icon: 'Zap',
-    allocatedCr: 18.00, // ₹18 Crore baseline
+    allocatedCr: 18.00,
     description: 'Elevation of electrical TNEB transformers, microgrid battery storage for emergency hospitals.',
     color: 'amber',
     items: [
@@ -406,7 +514,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-3',
     name: 'Sensors & Early Warning Telemetry',
     icon: 'Radio',
-    allocatedCr: 15.00, // ₹15 Crore baseline
+    allocatedCr: 15.00,
     description: 'IoT Ultrasonic water level sensors, rain gauges, automated siren networks, central GIS server node.',
     color: 'cyan',
     items: [
@@ -420,7 +528,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-4',
     name: 'Roads & Mobility Resilience',
     icon: 'Truck',
-    allocatedCr: 15.00, // ₹15 Crore baseline
+    allocatedCr: 15.00,
     description: 'Elevated hospital access corridors, flood-proof bridge approaches, porous pavement trials.',
     color: 'blue',
     items: [
@@ -433,7 +541,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-5',
     name: 'People & Community Housing',
     icon: 'ShieldAlert',
-    allocatedCr: 12.00, // ₹12 Crore baseline
+    allocatedCr: 12.00,
     description: 'Multi-purpose cyclone relief shelters, flood protection bunds, community boat kits, first responder training.',
     color: 'rose',
     items: [
@@ -446,7 +554,7 @@ export const DOMAINS_COST_SHEET = [
     id: 'domain-6',
     name: 'Environment & Wetland Protection',
     icon: 'Trees',
-    allocatedCr: 10.00, // ₹10 Crore baseline
+    allocatedCr: 10.00,
     description: 'Pallikaranai marshland ecological restoration, urban retention ponds, riverbank bio-shielding.',
     color: 'teal',
     items: [

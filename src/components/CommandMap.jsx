@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Circle, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { CHENNAI_CENTER } from '../data/chennaiData';
-import { Shield, Hospital, Droplets, Truck, Info, AlertTriangle, CloudRain, Wind, Flame } from 'lucide-react';
+import { CHENNAI_CENTER, CHENNAI_STREETS } from '../data/chennaiData';
+import { Shield, Hospital, Droplets, Truck, Info, AlertTriangle, CloudRain, Wind, Flame, Navigation } from 'lucide-react';
 
 // Custom Map icons setup
 const createCustomIcon = (color, emoji, pulse = false) => L.divIcon({
@@ -31,12 +31,49 @@ function MapRecenter({ center }) {
 export default function CommandMap({ cityOverview, sliders, resources, waterbodies, weatherData }) {
   const [showRadarOverlay, setShowRadarOverlay] = useState(true);
   const [showAlertPins, setShowAlertPins] = useState(true);
+  const [showStreets, setShowStreets] = useState(true);
 
   const primaryEpicenter = [12.9774, 80.2212]; // Velachery / Chembarambakkam catchment focal point
 
   // Calculated rain radar opacity & color based on hourly rain slider
   const radarOpacity = Math.min(0.45, Math.max(0.1, (sliders.rainfallHourly / 150) * 0.45));
   const radarColor = sliders.rainfallHourly > 80 ? '#7c3aed' : sliders.rainfallHourly > 40 ? '#0284c7' : '#0ea5e9';
+
+  // Calculate street-level flood risk (HIGH / MEDIUM / LOW)
+  const calculateStreetRisk = (street) => {
+    const rainfallImpact = (sliders.rainfallHourly * 0.4) + (sliders.rainfall24h / 300 * 40);
+    const drainImpact = sliders.drainBlockagePct * 0.3;
+    const rawScore = (street.baseHazard * 0.4) + (rainfallImpact * 0.4) + (drainImpact * 0.2);
+    
+    // Scale by elevation
+    const finalScore = Math.min(100, Math.max(5, Math.round(rawScore / (street.elevation * 0.35 + 0.6))));
+    const waterDepthCm = Math.max(0, Math.round((finalScore / 100) * (sliders.rainfall24h * 0.22)));
+
+    let riskLevel = 'LOW';
+    let color = '#10b981'; // green
+    let trafficStatus = 'FULLY PASSABLE';
+
+    if (finalScore >= 70) {
+      riskLevel = 'HIGH';
+      color = '#ef4444'; // red
+      trafficStatus = 'CLOSED - FLOODED (>45cm water)';
+    } else if (finalScore >= 45) {
+      riskLevel = 'MEDIUM';
+      color = '#f97316'; // orange
+      trafficStatus = 'WARNING - HEAVY VEHICLES / AMBULANCES ONLY';
+    }
+
+    return {
+      ...street,
+      riskScore: finalScore,
+      riskLevel,
+      color,
+      waterDepthCm,
+      trafficStatus
+    };
+  };
+
+  const calculatedStreets = CHENNAI_STREETS.map(s => calculateStreetRisk(s));
 
   return (
     <div className="relative w-full h-[540px] rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
@@ -48,7 +85,7 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
           <div className="h-3 w-3 rounded-full bg-cyan-400 animate-ping"></div>
           <div>
             <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-              GIS FLOOD MAP • WEATHER SYNCED
+              GIS FLOOD MAP • STREET NETWORK ACTIVE
             </div>
             <div className="text-[10px] text-slate-300 font-mono flex items-center gap-2">
               <span>Rain: <strong className="text-cyan-400">{sliders.rainfallHourly} mm/h</strong></span>
@@ -59,14 +96,23 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
         </div>
 
         {/* Layer Toggles */}
-        <div className="bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-lg shadow-lg flex items-center gap-2 text-xs font-mono">
+        <div className="bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-lg shadow-lg flex flex-wrap items-center gap-2 text-xs font-mono">
+          <button
+            onClick={() => setShowStreets(!showStreets)}
+            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+              showStreets ? 'bg-amber-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            <Navigation className="h-3.5 w-3.5" /> Flooded Streets Layer
+          </button>
+
           <button
             onClick={() => setShowRadarOverlay(!showRadarOverlay)}
             className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
               showRadarOverlay ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
             }`}
           >
-            <CloudRain className="h-3.5 w-3.5" /> Rain Radar Layer
+            <CloudRain className="h-3.5 w-3.5" /> Rain Radar
           </button>
 
           <button
@@ -83,13 +129,12 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
 
       {/* Map Legend overlay */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-slate-900/90 border border-slate-800 backdrop-blur-md p-2.5 rounded-lg shadow-lg text-[10px] font-mono text-slate-300">
-        <div className="font-bold text-slate-200 mb-1">MAP LEGEND & WEATHER SYNC</div>
+        <div className="font-bold text-slate-200 mb-1">STREET FLOOD RISK LEGEND</div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-          <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span> Critical Risk (&gt;75)</div>
-          <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span> High Risk (50-74)</div>
-          <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> Moderate (25-49)</div>
-          <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Low Risk (&lt;25)</div>
-          <div className="flex items-center gap-1.5">⚠️ Flood Alert Pin</div>
+          <div className="flex items-center gap-1.5"><span className="h-2 w-5 rounded bg-red-500"></span> High Risk Street (Closed)</div>
+          <div className="flex items-center gap-1.5"><span className="h-2 w-5 rounded bg-orange-500"></span> Medium Risk (Caution)</div>
+          <div className="flex items-center gap-1.5"><span className="h-2 w-5 rounded bg-emerald-500"></span> Low Risk Street (Safe)</div>
+          <div className="flex items-center gap-1.5">⚠️ Alert Location</div>
           <div className="flex items-center gap-1.5">🏥 Hospital Corridor</div>
         </div>
       </div>
@@ -107,6 +152,56 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
+
+        {/* Street-Level Color Coded Flood Risk Polylines Layer */}
+        {showStreets && calculatedStreets.map(street => (
+          <Polyline
+            key={street.id}
+            positions={street.coordinates}
+            pathOptions={{
+              color: street.color,
+              weight: street.riskLevel === 'HIGH' ? 6 : street.riskLevel === 'MEDIUM' ? 5 : 4,
+              opacity: 0.9,
+              dashArray: street.riskLevel === 'HIGH' ? '10, 6' : undefined
+            }}
+          >
+            <Popup>
+              <div className="p-1.5 min-w-[220px] font-mono">
+                <div className="flex items-center justify-between border-b border-slate-700 pb-1 mb-1.5">
+                  <span className="font-bold text-xs text-white">{street.name}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
+                    street.riskLevel === 'HIGH' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                    street.riskLevel === 'MEDIUM' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                    'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  }`}>
+                    {street.riskLevel} RISK
+                  </span>
+                </div>
+                
+                <div className="space-y-1 text-xs text-slate-300">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Street Type:</span>
+                    <span>{street.type}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Est. Water Depth:</span>
+                    <span className="font-bold text-blue-400">{street.waterDepthCm} cm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Street Elevation:</span>
+                    <span>{street.elevation} m</span>
+                  </div>
+                  <div className="mt-1.5 p-1.5 rounded bg-slate-900 border border-slate-800 text-[10px]">
+                    <span className="text-slate-400 block">Traffic Passability:</span>
+                    <span className={`font-bold ${street.riskLevel === 'HIGH' ? 'text-red-400' : 'text-amber-300'}`}>
+                      {street.trafficStatus}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Popup>
+          </Polyline>
+        ))}
 
         {/* Synced Rain Radar Cloud Layer */}
         {showRadarOverlay && (
