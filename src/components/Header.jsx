@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Waves, ShieldAlert, Activity, DollarSign, Clock, PlayCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Waves, ShieldAlert, Activity, DollarSign, Clock, PlayCircle, RefreshCw, AlertTriangle, HelpCircle } from 'lucide-react';
 
-export default function Header({ activeTab, setActiveTab, cityOverview, resetAllData }) {
+export default function Header({ activeTab, setActiveTab, cityOverview, resetAllData, onOpenGuide }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -74,7 +74,7 @@ export default function Header({ activeTab, setActiveTab, cityOverview, resetAll
             }`}
           >
             <DollarSign className="h-4 w-4" />
-            Domain Cost Sheet (₹100 Cr)
+            Domain Cost Sheet
           </button>
 
           <button
@@ -90,8 +90,17 @@ export default function Header({ activeTab, setActiveTab, cityOverview, resetAll
           </button>
         </nav>
 
-        {/* Live Clock & Actions */}
+        {/* User Guide, Clock & Actions */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={onOpenGuide}
+            className="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1.5 text-xs font-mono font-semibold"
+            title="Open User Guide & Dashboard Tour"
+          >
+            <HelpCircle className="h-4 w-4 text-cyan-400" />
+            <span>User Guide</span>
+          </button>
+
           <div className="hidden lg:flex flex-col items-end text-right font-mono">
             <div className="text-xs text-slate-300 font-semibold flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5 text-cyan-400" />

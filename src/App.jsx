@@ -7,6 +7,7 @@ import EmergencyResponse from './components/EmergencyResponse';
 import DomainCostSheet from './components/DomainCostSheet';
 import HistoricalReplay from './components/HistoricalReplay';
 import ToastContainer from './components/ToastContainer';
+import UserGuideModal from './components/UserGuideModal';
 
 import { 
   INITIAL_SLIDERS, 
@@ -27,6 +28,7 @@ export default function App() {
   const [domains, setDomains] = useState(DOMAINS_COST_SHEET);
   const [totalTargetBudget, setTotalTargetBudget] = useState(100.0);
   const [toasts, setToasts] = useState([]);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Toast Notification Manager
   const addToast = useCallback(({ type = 'info', title, message }) => {
@@ -114,6 +116,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white pb-12 relative">
       
+      {/* User Guide Onboarding Modal */}
+      <UserGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
+      />
+
       {/* Toast Pop-ups Container */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
@@ -123,6 +131,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         cityOverview={cityOverview}
         resetAllData={resetAllData}
+        onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* Main Container */}
