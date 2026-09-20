@@ -1,17 +1,18 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Circle, Marker, Popup, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { CHENNAI_CENTER } from '../data/chennaiData';
-import { Shield, Hospital, Droplets, Truck, Info, AlertTriangle } from 'lucide-react';
+import { Shield, Hospital, Droplets, Truck, Info, AlertTriangle, CloudRain, Wind, Flame } from 'lucide-react';
 
 // Custom Map icons setup
-const createCustomIcon = (color, emoji) => L.divIcon({
-  className: 'custom-leaflet-marker',
-  html: `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); font-size: 14px;">${emoji}</div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+const createCustomIcon = (color, emoji, pulse = false) => L.divIcon({
+  className: `custom-leaflet-marker ${pulse ? 'pulse-red' : ''}`,
+  html: `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.6); font-size: 16px;">${emoji}</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
 });
 
+const alertIcon = createCustomIcon('#dc2626', '⚠️', true);
 const hospitalIcon = createCustomIcon('#ef4444', '🏥');
 const reservoirIcon = createCustomIcon('#0284c7', '💧');
 const pumpIcon = createCustomIcon('#10b981', '🌊');
@@ -27,35 +28,69 @@ function MapRecenter({ center }) {
   return null;
 }
 
-export default function CommandMap({ cityOverview, sliders, resources, waterbodies }) {
+export default function CommandMap({ cityOverview, sliders, resources, waterbodies, weatherData }) {
+  const [showRadarOverlay, setShowRadarOverlay] = useState(true);
+  const [showAlertPins, setShowAlertPins] = useState(true);
+
   const primaryEpicenter = [12.9774, 80.2212]; // Velachery / Chembarambakkam catchment focal point
 
+  // Calculated rain radar opacity & color based on hourly rain slider
+  const radarOpacity = Math.min(0.45, Math.max(0.1, (sliders.rainfallHourly / 150) * 0.45));
+  const radarColor = sliders.rainfallHourly > 80 ? '#7c3aed' : sliders.rainfallHourly > 40 ? '#0284c7' : '#0ea5e9';
+
   return (
-    <div className="relative w-full h-[520px] rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+    <div className="relative w-full h-[540px] rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
       
-      {/* Overlay Badge */}
-      <div className="absolute top-3 left-3 z-[1000] bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3 py-2 rounded-lg shadow-lg flex items-center gap-2.5">
-        <div className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-ping"></div>
-        <div>
-          <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-            GIS FLOOD MAP • CHENNAI
-          </div>
-          <div className="text-[10px] text-slate-400 font-mono">
-            Radius: {sliders.floodAreaRadius} km • Dynamic Risk Heatmap
+      {/* Top Left Overlay Badge & Weather Layer Toggles */}
+      <div className="absolute top-3 left-3 z-[1000] flex flex-col gap-2">
+        
+        <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-3.5 py-2.5 rounded-lg shadow-lg flex items-center gap-3">
+          <div className="h-3 w-3 rounded-full bg-cyan-400 animate-ping"></div>
+          <div>
+            <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
+              GIS FLOOD MAP • WEATHER SYNCED
+            </div>
+            <div className="text-[10px] text-slate-300 font-mono flex items-center gap-2">
+              <span>Rain: <strong className="text-cyan-400">{sliders.rainfallHourly} mm/h</strong></span>
+              <span>•</span>
+              <span>Spread: <strong className="text-red-400">{sliders.floodAreaRadius} km</strong></span>
+            </div>
           </div>
         </div>
+
+        {/* Layer Toggles */}
+        <div className="bg-slate-900/90 border border-slate-800 backdrop-blur-md p-1.5 rounded-lg shadow-lg flex items-center gap-2 text-xs font-mono">
+          <button
+            onClick={() => setShowRadarOverlay(!showRadarOverlay)}
+            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+              showRadarOverlay ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            <CloudRain className="h-3.5 w-3.5" /> Rain Radar Layer
+          </button>
+
+          <button
+            onClick={() => setShowAlertPins(!showAlertPins)}
+            className={`px-2.5 py-1 rounded flex items-center gap-1 transition-all ${
+              showAlertPins ? 'bg-red-500 text-white font-bold' : 'bg-slate-800 text-slate-400'
+            }`}
+          >
+            <AlertTriangle className="h-3.5 w-3.5" /> Flood Alert Pins ({cityOverview.alerts.length})
+          </button>
+        </div>
+
       </div>
 
       {/* Map Legend overlay */}
       <div className="absolute bottom-3 left-3 z-[1000] bg-slate-900/90 border border-slate-800 backdrop-blur-md p-2.5 rounded-lg shadow-lg text-[10px] font-mono text-slate-300">
-        <div className="font-bold text-slate-200 mb-1">MAP LEGEND</div>
+        <div className="font-bold text-slate-200 mb-1">MAP LEGEND & WEATHER SYNC</div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-500"></span> Critical Risk (&gt;75)</div>
           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-orange-500"></span> High Risk (50-74)</div>
           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-yellow-400"></span> Moderate (25-49)</div>
           <div className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span> Low Risk (&lt;25)</div>
-          <div className="flex items-center gap-1.5">🏥 Critical Hospital</div>
-          <div className="flex items-center gap-1.5">💧 Water Reservoir</div>
+          <div className="flex items-center gap-1.5">⚠️ Flood Alert Pin</div>
+          <div className="flex items-center gap-1.5">🏥 Hospital Corridor</div>
         </div>
       </div>
 
@@ -73,6 +108,20 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
+        {/* Synced Rain Radar Cloud Layer */}
+        {showRadarOverlay && (
+          <Circle
+            center={primaryEpicenter}
+            radius={(sliders.floodAreaRadius + 4) * 1000}
+            pathOptions={{
+              color: radarColor,
+              fillColor: radarColor,
+              fillOpacity: radarOpacity,
+              weight: 0
+            }}
+          />
+        )}
+
         {/* Dynamic Inundation Spread Overlay Circle */}
         <Circle
           center={primaryEpicenter}
@@ -80,15 +129,45 @@ export default function CommandMap({ cityOverview, sliders, resources, waterbodi
           pathOptions={{
             color: '#ef4444',
             fillColor: '#ef4444',
-            fillOpacity: 0.18,
+            fillOpacity: 0.22,
             dashArray: '8, 8',
-            weight: 2
+            weight: 2.5
           }}
         >
           <Tooltip permanent direction="top" className="bg-red-950 text-red-200 border-red-800 font-mono text-[10px]">
-            Primary Inundation Spread: {sliders.floodAreaRadius} km
+            Inundation Zone: {sliders.floodAreaRadius} km (Rain: {sliders.rainfallHourly} mm/h)
           </Tooltip>
         </Circle>
+
+        {/* Flood Alert Pins Rendered directly ON MAP */}
+        {showAlertPins && cityOverview.calculatedWards.filter(w => w.riskLevel === 'CRITICAL' || w.riskLevel === 'HIGH').map(ward => (
+          <Marker
+            key={`alert-${ward.id}`}
+            position={[ward.lat + 0.004, ward.lng + 0.004]}
+            icon={alertIcon}
+          >
+            <Popup>
+              <div className="p-1.5 min-w-[210px] font-mono">
+                <div className="flex items-center gap-1.5 text-red-400 font-bold text-xs border-b border-slate-700 pb-1 mb-1">
+                  <AlertTriangle className="h-4 w-4" /> FLOOD ALERT: {ward.name}
+                </div>
+                <div className="text-xs text-slate-200 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Risk Score:</span>
+                    <span className="font-bold text-red-400">{ward.riskScore}/100</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Est. Water Depth:</span>
+                    <span className="font-bold text-blue-400">{ward.waterDepthCm} cm</span>
+                  </div>
+                  <div className="text-[10px] text-amber-300 mt-1">
+                    Rule Triggered: Model Risk &gt;= {ward.riskScore}
+                  </div>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* Ward Risk Heatmap Circles & Markers */}
         {cityOverview.calculatedWards.map(ward => {
