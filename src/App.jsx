@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Header from './components/Header';
 import LiveSimulationControls from './components/LiveSimulationControls';
 import CommandMap from './components/CommandMap';
 import EmergencyResponse from './components/EmergencyResponse';
 import DomainCostSheet from './components/DomainCostSheet';
 import HistoricalReplay from './components/HistoricalReplay';
+import ToastContainer from './components/ToastContainer';
 
 import { 
   INITIAL_SLIDERS, 
@@ -23,7 +24,31 @@ export default function App() {
   const [sliders, setSliders] = useState(INITIAL_SLIDERS);
   const [resources, setResources] = useState(INITIAL_RESOURCES);
   const [domains, setDomains] = useState(DOMAINS_COST_SHEET);
-  const [totalTargetBudget, setTotalTargetBudget] = useState(100.0); // Default user budget cap in Crore
+  const [totalTargetBudget, setTotalTargetBudget] = useState(100.0);
+  const [toasts, setToasts] = useState([]);
+
+  // Toast Notification Manager
+  const addToast = useCallback(({ type = 'info', title, message }) => {
+    const id = Date.now() + Math.random();
+    const newToast = {
+      id,
+      type,
+      title,
+      message,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    setToasts(prev => [newToast, ...prev.slice(0, 4)]);
+
+    // Auto dismiss toast after 4 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   // Compute live city intelligence overview whenever sliders or resources change
   const cityOverview = useMemo(() => {
@@ -33,6 +58,11 @@ export default function App() {
   // Apply slider preset
   const applyPreset = (preset) => {
     setSliders(preset.sliders);
+    addToast({
+      type: 'warning',
+      title: `🌧️ SCENARIO LOADED: ${preset.name}`,
+      message: `${preset.description} (Rain: ${preset.sliders.rainfallHourly}mm/hr, Spread: ${preset.sliders.floodAreaRadius}km)`
+    });
   };
 
   // Reset all simulation parameters to defaults
@@ -41,6 +71,11 @@ export default function App() {
     setResources(INITIAL_RESOURCES);
     setDomains(DOMAINS_COST_SHEET);
     setTotalTargetBudget(100.0);
+    addToast({
+      type: 'info',
+      title: '🔄 SIMULATION RESET',
+      message: 'All parameters, resource assignments, and budget allocations restored to defaults.'
+    });
   };
 
   // Deploy emergency asset to location
@@ -48,24 +83,39 @@ export default function App() {
     setResources(prev => {
       const availableIndex = prev.findIndex(r => r.type === type && r.status === 'AVAILABLE');
       if (availableIndex === -1) {
-        alert(`No available ${type} resources! All currently deployed.`);
+        addToast({
+          type: 'error',
+          title: '⚠️ NO ASSETS AVAILABLE',
+          message: `All ${type} resources are currently deployed. Recall or re-assign an existing unit.`
+        });
         return prev;
       }
       const updated = [...prev];
+      const asset = updated[availableIndex];
       updated[availableIndex] = {
-        ...updated[availableIndex],
+        ...asset,
         status: 'DEPLOYED',
         assignedWard: targetName,
         lat,
         lng
       };
+
+      addToast({
+        type: 'success',
+        title: `🚨 ASSET DEPLOYED: ${asset.name}`,
+        message: `Successfully dispatched to ${targetName}. Priority response active.`
+      });
+
       return updated;
     });
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white pb-12">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-white pb-12 relative">
       
+      {/* Toast Pop-ups Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       {/* Header */}
       <Header
         activeTab={activeTab}
@@ -77,7 +127,7 @@ export default function App() {
       {/* Main Container */}
       <main className="max-w-7xl w-full mx-auto px-4 py-6 space-y-6 flex-1">
         
-        {/* Live Simulation Controls Bar (Always Accessible at top) */}
+        {/* Live Simulation Controls Bar */}
         <LiveSimulationControls
           sliders={sliders}
           setSliders={setSliders}
@@ -148,7 +198,7 @@ export default function App() {
             {/* Map and Alerts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* GIS Map (Spans 2 cols) */}
+              {/* GIS Map */}
               <div className="lg:col-span-2">
                 <CommandMap
                   cityOverview={cityOverview}
@@ -208,6 +258,7 @@ export default function App() {
             resources={resources}
             setResources={setResources}
             deployResource={deployResource}
+            addToast={addToast}
           />
         )}
 
@@ -218,6 +269,7 @@ export default function App() {
             setDomains={setDomains}
             totalTargetBudget={totalTargetBudget}
             setTotalTargetBudget={setTotalTargetBudget}
+            addToast={addToast}
           />
         )}
 

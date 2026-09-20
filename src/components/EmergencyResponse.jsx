@@ -1,8 +1,41 @@
-import React from 'react';
-import { ShieldAlert, Truck, Wrench, Droplets, Zap, CheckCircle2, AlertTriangle, ArrowRight, Hospital, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldAlert, Truck, Wrench, Droplets, Zap, CheckCircle2, AlertTriangle, ArrowRight, Hospital, MapPin, Radio, Cpu, RefreshCw, LifeBuoy } from 'lucide-react';
 
-export default function EmergencyResponse({ cityOverview, resources, setResources, deployResource }) {
-  
+export default function EmergencyResponse({ cityOverview, resources, setResources, deployResource, addToast }) {
+  const [failures, setFailures] = useState({
+    pumpFailure: false,
+    commsOutage: false,
+    powerBlackout: false,
+    routeBlocked: false
+  });
+
+  const toggleFailure = (key, label) => {
+    setFailures(prev => {
+      const nextState = !prev[key];
+      
+      if (addToast) {
+        if (nextState) {
+          addToast({
+            type: 'error',
+            title: `⚠️ SYSTEM FAILURE: ${label}`,
+            message: `Critical failure detected! Emergency contingency protocols activated for ${label}.`
+          });
+        } else {
+          addToast({
+            type: 'success',
+            title: `✅ SYSTEM RESTORED: ${label}`,
+            message: `Normal operational status restored for ${label}.`
+          });
+        }
+      }
+
+      return {
+        ...prev,
+        [key]: nextState
+      };
+    });
+  };
+
   const getResourceIcon = (type) => {
     switch(type) {
       case 'PUMP': return <Droplets className="h-4 w-4 text-emerald-400" />;
@@ -16,12 +49,144 @@ export default function EmergencyResponse({ cityOverview, resources, setResource
   return (
     <div className="space-y-6">
       
+      {/* System Fail-Safe & Contingency Protocol Matrix */}
+      <div className="bg-slate-900 border border-red-500/40 rounded-xl p-4 shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <h3 className="text-sm font-bold text-red-400 font-mono flex items-center gap-2">
+              <LifeBuoy className="h-4 w-4 text-red-400" />
+              SYSTEM FAILURE CONTINGENCY & FAIL-SAFE MATRIX
+            </h3>
+            <p className="text-xs text-slate-400 font-mono">
+              Simulate infrastructure failures (pump jam, sensor comms outage, power blackout) and test automated contingency pop-ups & protocols!
+            </p>
+          </div>
+          <span className="text-[10px] bg-red-500/10 text-red-400 px-2.5 py-1 rounded border border-red-500/20 font-mono font-bold">
+            FAIL-SAFE SIMULATOR
+          </span>
+        </div>
+
+        {/* Interactive Failure Simulation Toggles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          {/* Toggle 1: Pump Failure */}
+          <div className={`p-3 rounded-lg border transition-all ${
+            failures.pumpFailure ? 'bg-red-950/80 border-red-500' : 'bg-slate-950 border-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                <Droplets className="h-3.5 w-3.5 text-emerald-400" /> Pumping Station Jam
+              </span>
+              <button
+                onClick={() => toggleFailure('pumpFailure', 'Pumping Station Jam')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
+                  failures.pumpFailure ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
+                {failures.pumpFailure ? 'FAILURE ACTIVE' : 'SIMULATE FAIL'}
+              </button>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">
+              {failures.pumpFailure ? (
+                <span className="text-red-300 font-semibold">
+                  ⚠️ Primary pump jammed! Action: Auto-dispatching backup diesel sludge pumps + opening gravity sluices.
+                </span>
+              ) : 'Pumps operational (Normal status).'}
+            </div>
+          </div>
+
+          {/* Toggle 2: Comms / Sensor Outage */}
+          <div className={`p-3 rounded-lg border transition-all ${
+            failures.commsOutage ? 'bg-red-950/80 border-red-500' : 'bg-slate-950 border-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                <Radio className="h-3.5 w-3.5 text-cyan-400" /> Comms & Telemetry Down
+              </span>
+              <button
+                onClick={() => toggleFailure('commsOutage', 'Comms & Telemetry Outage')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
+                  failures.commsOutage ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
+                {failures.commsOutage ? 'OUTAGE ACTIVE' : 'SIMULATE FAIL'}
+              </button>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">
+              {failures.commsOutage ? (
+                <span className="text-red-300 font-semibold">
+                  📡 Cellular telemetry lost! Action: Switched to P2P VHF Radio Mesh & runoff model extrapolation.
+                </span>
+              ) : 'Telemetry grid active.'}
+            </div>
+          </div>
+
+          {/* Toggle 3: Power Blackout */}
+          <div className={`p-3 rounded-lg border transition-all ${
+            failures.powerBlackout ? 'bg-red-950/80 border-red-500' : 'bg-slate-950 border-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5 text-amber-400" /> Substation Power Blackout
+              </span>
+              <button
+                onClick={() => toggleFailure('powerBlackout', 'Substation Power Blackout')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
+                  failures.powerBlackout ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
+                {failures.powerBlackout ? 'BLACKOUT ACTIVE' : 'SIMULATE FAIL'}
+              </button>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">
+              {failures.powerBlackout ? (
+                <span className="text-red-300 font-semibold">
+                  ⚡ Grid power failed! Action: Hospital islanded onto BESS Microgrids + 250 kVA mobile generators.
+                </span>
+              ) : 'Substation power grid normal.'}
+            </div>
+          </div>
+
+          {/* Toggle 4: Hospital Route Blocked */}
+          <div className={`p-3 rounded-lg border transition-all ${
+            failures.routeBlocked ? 'bg-red-950/80 border-red-500' : 'bg-slate-950 border-slate-800'
+          }`}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
+                <Hospital className="h-3.5 w-3.5 text-red-400" /> Ambulance Route Flooded
+              </span>
+              <button
+                onClick={() => toggleFailure('routeBlocked', 'Ambulance Route Inundated')}
+                className={`text-[10px] font-bold px-2 py-0.5 rounded font-mono ${
+                  failures.routeBlocked ? 'bg-red-500 text-white' : 'bg-slate-800 text-slate-300'
+                }`}
+              >
+                {failures.routeBlocked ? 'ROUTE BLOCKED' : 'SIMULATE FAIL'}
+              </button>
+            </div>
+            <div className="text-[10px] text-slate-400 mt-1">
+              {failures.routeBlocked ? (
+                <span className="text-red-300 font-semibold">
+                  🏥 EVR Periyar corridor flooded over 60cm! Action: Auto-re-routed to Greams Rd + 4x4 rescue boats dispatched.
+                </span>
+              ) : 'Ambulance corridors clear.'}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
       {/* Top Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
           <div className="text-xs text-slate-400 font-mono">Pumping Capacity</div>
-          <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">5 Units (44.5k L/min)</div>
-          <div className="text-[10px] text-slate-500 mt-1">Available: {resources.filter(r => r.type === 'PUMP' && r.status === 'AVAILABLE').length} of 5</div>
+          <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
+            {failures.pumpFailure ? '3 Units (Backup Active)' : '5 Units (44.5k L/min)'}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-1">
+            {failures.pumpFailure ? 'Secondary Sluices Opened' : `Available: ${resources.filter(r => r.type === 'PUMP' && r.status === 'AVAILABLE').length} of 5`}
+          </div>
         </div>
         
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
@@ -157,16 +322,18 @@ export default function EmergencyResponse({ cityOverview, resources, setResource
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-white font-mono">{fac.name}</span>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                      fac.routeRisk >= 70 ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                      fac.routeRisk >= 70 || failures.routeBlocked ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
                     }`}>
-                      Route Risk: {fac.routeRisk}%
+                      Route Risk: {failures.routeBlocked ? '95% (BLOCKED)' : `${fac.routeRisk}%`}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono mb-2">
-                    Corridor: {fac.corridorName}
+                    Corridor: {failures.routeBlocked ? 'DETOUR via Greams Elevated Ramp' : fac.corridorName}
                   </div>
                   <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-amber-400 font-semibold">{fac.accessStatus}</span>
+                    <span className="text-amber-400 font-semibold">
+                      {failures.routeBlocked ? 'AMPHIBIOUS RESCUE ACTIVE' : fac.accessStatus}
+                    </span>
                     {fac.isResourceAssigned ? (
                       <span className="text-emerald-400 flex items-center gap-1 font-mono">
                         <CheckCircle2 className="h-3 w-3" /> Pump Protected
